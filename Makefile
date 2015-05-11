@@ -4,7 +4,8 @@ FILES_C = $(shell find src -type f -name '*.cpp')
 FILES_H = $(shell find src -type f -name '*.hpp')
 FILES_O = $(foreach file, $(FILES_C), $(patsubst src/%, obj/%, $(patsubst %.cpp, %.o, $(file))))
 
-COMPILE_FLAGS := -Wall -lGL -lglut
+COMPILE_FLAGS := -Wall
+LINK_FLAGS := -lGL -lGLU -lglut
 
 .PHONY: all clean run
 
