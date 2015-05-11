@@ -29,14 +29,29 @@ Renderer*Main::getRenderer() {
 void display(void) {	Main::getInstance()->getRenderer()->display();	}
 void idle(void)	   {	Main::getInstance()->getRenderer()->idle();	}
 
+void mouseClick(int button, int state, int x, int y) {
+    Main::getInstance()->getRenderer()->mouseClick(button, state, x, y);
+}
+
+void mouseMotion(int x, int y) {
+    Main::getInstance()->getRenderer()->mouseMotion(x, y);
+}
+
+void keyboard(unsigned char key, int x, int y){
+    Main::getInstance()->getRenderer()->keyboard(key, x, y);
+}
+
 int main(int argc, char*argv[]){
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(800,800);
     glutCreateWindow(NAME);
-    
+
     glutDisplayFunc(display);
     glutIdleFunc(idle);
+    glutKeyboardFunc(keyboard);
+    glutMouseFunc(mouseClick);
+    glutMotionFunc(mouseMotion);
 
     srand(time(NULL));
 

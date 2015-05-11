@@ -3,9 +3,13 @@
 
 class Renderer {
 public:
-    virtual void setup(void){}
-    virtual void display(void){}
-    virtual void idle(void){}
+    virtual void setup(){}
+    virtual void display(){}
+    virtual void idle(){}
+
+    virtual void mouseClick(int button, int state, int x, int y){}
+    virtual void mouseMotion(int x, int y){}
+    virtual void keyboard(unsigned char key, int x, int y){}
 };
 
 #endif

@@ -1,10 +1,10 @@
 #ifndef PLANETRENDERER_H
 #define PLANETRENDERER_H
 
-#include "Renderer.hpp"
+#include "NavigableRenderer.hpp"
 #include "Planet.hpp"
 
-class PlanetRenderer : public Renderer {
+class PlanetRenderer : public NavigableRenderer {
     Planet*_planet;
     
 public:
