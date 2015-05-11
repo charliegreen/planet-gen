@@ -3,6 +3,7 @@
 
 #include "Main.hpp"
 #include "TestRenderer.hpp"
+#include "PlanetRenderer.hpp"
 
 Main*Main::_instance = NULL;
 Renderer*Main::_renderer = NULL;
@@ -40,7 +41,7 @@ int main(int argc, char*argv[]){
     srand(time(NULL));
 
     //Renderer*r = new TestRenderer();
-    Main::getInstance()->setRenderer(new TestRenderer());
+    Main::getInstance()->setRenderer(new PlanetRenderer(new Planet(6000)));
     glutMainLoop();
     return 0;
 }
