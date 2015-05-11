@@ -9,6 +9,10 @@
 #include <GL/glut.h>
 #include <glm/glm.hpp>
 
-class Util {};
+class Util {
+public:
+    static glm::vec3 aToVec3(float array[]);
+    static void vec3ToA(glm::vec3 v, float*array);
+};
 
 #endif

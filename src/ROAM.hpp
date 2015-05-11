@@ -2,8 +2,10 @@
 #define ROAM_H
 
 #include "Util.hpp"
+//#include "PlanetRenderer.hpp"
 
 class ROAMDiamond;
+class PlanetRenderer;
 
 class ROAMTriangle {
 public:
@@ -12,11 +14,14 @@ public:
     ROAMTriangle*_parent;
     ROAMDiamond*_diamond;
 
+    ROAMTriangle(ROAMTriangle*parent, ROAMDiamond*diamond); // for split
     ROAMTriangle(glm::vec3 a, glm::vec3 b, glm::vec3 c); // for the main 12
     
     float getSplitPriority(glm::vec3 pos);
     //void getVertArray(GLfloat*array);
     void draw();
+
+    void split(PlanetRenderer*pr);
 };
 
 class ROAMDiamond {

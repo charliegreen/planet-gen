@@ -73,6 +73,8 @@ PlanetRenderer::PlanetRenderer(Planet*p):
     _triangles->push_front(t540);
     _triangles->push_front(t673);
     _triangles->push_front(t326);
+
+    t462->split(this);
 }
 
 void PlanetRenderer::setup() {

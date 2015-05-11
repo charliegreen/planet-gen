@@ -9,9 +9,12 @@
 #include "ROAM.hpp"
 
 class PlanetRenderer : public NavigableRenderer {
+    friend class ROAMTriangle;
+    friend class ROAMDiamond;
+
     Planet*_planet;
     std::list<ROAMTriangle*>*_triangles;
-    
+
 public:
     PlanetRenderer(Planet*p);
     void setup();
