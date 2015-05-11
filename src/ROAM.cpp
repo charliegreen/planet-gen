@@ -6,9 +6,7 @@
 
 #define TRIANGLE_DRAW_IDS
 
-#ifdef TRIANGLE_DRAW_IDS
 int ROAMTriangle::_numTriangles = 0;
-#endif
 
 ROAMTriangle::ROAMTriangle(ROAMTriangle*parent, ROAMDiamond*diamond):
     _parent(parent), _diamond(diamond)
@@ -31,8 +29,15 @@ ROAMTriangle::ROAMTriangle(glm::vec3 a, glm::vec3 b, glm::vec3 c):
     _verts[8] = c.z;
 }
 
-float ROAMTriangle::getSplitPriority(glm::vec3 pos) { // TODO
-    return 0;
+float ROAMTriangle::getSplitPriority(Planet*p, glm::vec3 pos) {
+    // compute error
+    //glm::vec3 midpoint = (Util::aToVec3(_verts)+Util::aToVec3(_verts+6));
+    glm::vec3 midpoint = glm::vec3((_verts[0]+_verts[6])/2,
+				   (_verts[1]+_verts[7])/2,
+				   (_verts[2]+_verts[8])/2);
+    float error = fabs(glm::length(midpoint) - p->altitude(glm::normalize(midpoint)));
+    
+    return error;
 }
 
 void ROAMTriangle::draw() {	// TODO this can be hella optimized
@@ -61,10 +66,12 @@ float ROAMDiamond::getMergePriority(glm::vec3 pos) { // TODO
 }
 
 void ROAMTriangle::split(PlanetRenderer*pr) {
-    //std::cout << "Splitting: " << this << "\n";
+    std::cout << "Splitting: " << this << "\n";
     
     // We're not in a square, so the other triangle needs to split first
     if (_edges[2]->_edges[2] != this) {
+	printf("not in a square; not splitting\n");
+	return;
 	_edges[2]->split(pr);
 	if (_edges[2]->_edges[2] != this) {
 	    printf("aahhhhh\n");

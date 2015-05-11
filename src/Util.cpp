@@ -1,3 +1,5 @@
+#include <sys/time.h>
+
 #include "Util.hpp"
 
 glm::vec3 Util::aToVec3(float array[]) {
@@ -8,4 +10,10 @@ void Util::vec3ToA(glm::vec3 v, float*array) {
     array[0] = v.x;
     array[1] = v.y;
     array[2] = v.z;
+}
+
+unsigned long long Util::timeMillis() {
+    struct timeval tp;
+    gettimeofday(&tp, NULL);
+    return tp.tv_sec*1000+tp.tv_usec/1000;
 }

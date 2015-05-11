@@ -79,8 +79,9 @@ PlanetRenderer::PlanetRenderer(Planet*p):
     // 	std::cout << "Created: " << (*i) << "\n";
     // }
     
-    t015->split(this);
-    t015->split(this);
+    // t015->split(this);
+    // t015->split(this);
+    // t015->split(this);
 }
 
 void PlanetRenderer::setup() {
@@ -140,7 +141,49 @@ void PlanetRenderer::display() {
     glutSwapBuffers();
 }
 
+void PlanetRenderer::updateROAM() {
+    printf("Updating ROAM...\n");
+    // current camera location
+    glm::vec3 here = glm::vec3(0); // TODO
+
+    // ================================ update mesh
+    std::list<ROAMTriangle*> triangles = std::list<ROAMTriangle*>(*_triangles);
+    
+    static const float splitPriority = 1000;
+    std::list<ROAMTriangle*>::iterator i;
+    std::list<ROAMTriangle*>::iterator end = triangles.end();
+    for (i = triangles.begin(); i != end; i++) {
+    	ROAMTriangle*t = *i;	
+	printf("0x%x; _triangles->size()==%d, triangles.size()==%d\n", (unsigned long)t,
+	       _triangles->size(), triangles.size());
+	
+	if (_triangles->size() > 40) {
+	    printf("_triangles->size() too big; quitting before it's too late\n");
+	    exit(0);
+	}
+
+    	if (t->getSplitPriority(_planet, here) > splitPriority) {
+	    //printf("Splitting\n");
+    	    t->split(this);
+    	}
+    }
+    printf("Done updating ROAM.\n");
+}
+
 void PlanetRenderer::idle() {
     viewAngle += 0.02;
+
+    static unsigned long long last = 0;
+    unsigned long long now = Util::timeMillis();
+    if (now - last > 10000) {
+	printf("================================\n");
+    	updateROAM();
+    	last = now;
+    }
+    // if (last == 0) {
+    // 	updateROAM();
+    // 	last = now;
+    // }
+    
     glutPostRedisplay();
 }

@@ -15,6 +15,8 @@ class PlanetRenderer : public NavigableRenderer {
     Planet*_planet;
     std::list<ROAMTriangle*>*_triangles;
 
+    void updateROAM();
+    
 public:
     PlanetRenderer(Planet*p);
     void setup();
