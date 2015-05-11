@@ -4,22 +4,20 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdarg.h>
-#include <stdio.h>
-#include <time.h>
-#include <math.h>
 
 #define NAME "planet-gen"
 
+#include "Renderer.hpp"
+
 class Main {
     static Main*_instance;
-
+    static Renderer*_renderer;
     Main();
 
 public:
     static Main*getInstance();
-
-    void setup();
-    void display();
+    void setRenderer(Renderer*r);
+    Renderer*getRenderer();
 };
 
 #endif
