@@ -6,6 +6,8 @@
 #include <stddef.h>
 #include <stdio.h>
 
+#include <iostream>
+
 #include <GL/glut.h>
 #include <glm/glm.hpp>
 

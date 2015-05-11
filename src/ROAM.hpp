@@ -14,6 +14,9 @@ public:
     ROAMTriangle*_parent;
     ROAMDiamond*_diamond;
 
+    int _id;
+    static int _numTriangles;
+    
     ROAMTriangle(ROAMTriangle*parent, ROAMDiamond*diamond); // for split
     ROAMTriangle(glm::vec3 a, glm::vec3 b, glm::vec3 c); // for the main 12
     
@@ -22,6 +25,8 @@ public:
     void draw();
 
     void split(PlanetRenderer*pr);
+
+    friend std::ostream&operator<<(std::ostream&strm, const ROAMTriangle*t);
 };
 
 class ROAMDiamond {

@@ -12,7 +12,7 @@ PlanetRenderer::PlanetRenderer(Planet*p):
     // ================================================================ set up basic ROAM cube
     _triangles = new std::list<ROAMTriangle*>();
 
-    float r = _planet->getRadius()/2;
+    float r = _planet->getRadius()/sqrt(3);
     glm::vec3 verts[] = {
 	glm::vec3( r, r, r), glm::vec3( r, r,-r),
 	glm::vec3( r,-r, r), glm::vec3( r,-r,-r),
@@ -74,7 +74,13 @@ PlanetRenderer::PlanetRenderer(Planet*p):
     _triangles->push_front(t673);
     _triangles->push_front(t326);
 
-    t462->split(this);
+    // std::list<ROAMTriangle*>::iterator i;
+    // for (i = _triangles->begin(); i != _triangles->end(); i++) {
+    // 	std::cout << "Created: " << (*i) << "\n";
+    // }
+    
+    t015->split(this);
+    t015->split(this);
 }
 
 void PlanetRenderer::setup() {
