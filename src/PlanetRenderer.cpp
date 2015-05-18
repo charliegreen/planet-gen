@@ -1,8 +1,12 @@
 #include <GL/freeglut.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "PlanetRenderer.hpp"
 #include "ROAM.hpp"
+
+// comment to suppress updateROAM's metadata output
+//#define UPDATEROAM_PRINTINFO
 
 static float viewAngle = 0;
 
@@ -167,7 +171,14 @@ void PlanetRenderer::setup() {
 }
 
 void PlanetRenderer::display() {
+    // const int fpsesSize = 30;
+    // static float fpses[fpsesSize];
+    // static int fpsIndex = 0;
     unsigned long long start = Util::timeMillis();
+
+    static unsigned long long last = start;
+    static int fps = 0;
+    static int lastFps = 60;
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     //glClear(GL_COLOR_BUFFER_BIT);
@@ -193,15 +204,31 @@ void PlanetRenderer::display() {
     glDisable(GL_TEXTURE_2D);
     glDisable(GL_LIGHTING);
     glLoadIdentity();
-    glWindowPos2i(700, 780);
+    glWindowPos2i(730, 780);
 
+    // fpses[fpsIndex] = 1000./(Util::timeMillis()-start);
+    // fpsIndex = (fpsIndex+1)%fpsesSize;
+
+    // float fps = 0;
+    // for (int i = 0; i < fpsesSize; i++)
+    // 	fps += fpses[i];
+    // fps /= fpsesSize;
+    
     char text[16];
     memset(text,0,sizeof(text));
-    snprintf(text,sizeof(text),"%0.2ffps",1000./(Util::timeMillis()-start));
+    snprintf(text,sizeof(text),"%d fps",lastFps);
     glutBitmapString(GLUT_BITMAP_HELVETICA_18, (const unsigned char*)text);
 
     glPopAttrib();
     glPopMatrix();
+
+    if (last < Util::timeMillis()-1000) {
+	last = Util::timeMillis();
+	lastFps = fps;
+	fps = 0;
+    } else {
+	fps++;
+    }
     
     glutSwapBuffers();
 }
@@ -234,8 +261,10 @@ void PlanetRenderer::keyboard(unsigned char key, int x, int y){
 }
 
 void PlanetRenderer::updateROAM() {
+#ifdef UPDATEROAM_PRINTINFO
     printf("Updating ROAM...");
     unsigned long long start = Util::timeMillis();
+#endif
     int numSplits = 0;
     
     // current camera location
@@ -263,9 +292,11 @@ void PlanetRenderer::updateROAM() {
     	    numSplits += t->split(this);
     	}
     }
-    
+
+#ifdef UPDATEROAM_PRINTINFO
     printf("Done. (%d splits, %lu total triangles) [%llums]\n",
 	   numSplits, _triangles->size(), Util::timeMillis()-start);
+#endif
 }
 
 void PlanetRenderer::idle() {
@@ -273,6 +304,8 @@ void PlanetRenderer::idle() {
     viewAngle += 0.02;
 #endif
 
+    updateROAM();
+    
 #if 0
     static unsigned long long last = 0;
     unsigned long long now = Util::timeMillis();
@@ -298,6 +331,6 @@ void PlanetRenderer::idle() {
     	last = now;
     }
 #endif
-    
+
     glutPostRedisplay();
 }
