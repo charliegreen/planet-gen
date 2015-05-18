@@ -14,10 +14,9 @@ PlanetRenderer::PlanetRenderer(Planet*p):
     NavigableRenderer(0,0,3*p->getRadius(),0,0,0),
     _planet(p)
 {
-    // ================================================================ set up basic ROAM cube
     _triangles = new std::list<ROAMTriangle*>();
 
-#if 1
+    // ================================================================ set up basic ROAM cube
     float r = _planet->getRadius()/sqrt(3);
     glm::vec3 verts[] = {
 	glm::vec3( r, r, r), glm::vec3( r, r,-r),
@@ -78,18 +77,11 @@ PlanetRenderer::PlanetRenderer(Planet*p):
     _triangles->push_front(t015);
     _triangles->push_front(t540);
     _triangles->push_front(t673);
-    _triangles->push_front(t326);
+    _triangles->push_front(t326);    
 
-    // std::list<ROAMTriangle*>::iterator i;
-    // for (i = _triangles->begin(); i != _triangles->end(); i++) {
-    // 	std::cout << "Created: " << (*i) << "\n";
-    // }
-    
-    // t015->split(this);
-    // t015->split(this);
-    // t015->split(this);
-
-#else
+    /* I'm keeping the code for setting up the grid in case I need it, but I probably won't,
+       and you probably shouldn't uncomment this and expect other things to still work. If
+       you do uncomment it, comment the above code that creates the initial ROAM cube.
 #define GRIDSIZE 3
 #define GRIDWIDTH 4500
     
@@ -126,9 +118,8 @@ PlanetRenderer::PlanetRenderer(Planet*p):
 	    grid[i][j][1]->_edges[0] = j<GRIDSIZE-1 ? grid[i][j+1][0] : NULL;
 	    grid[i][j][1]->_edges[1] = i<GRIDSIZE-1 ? grid[i+1][j][0] : NULL;
 	}
-    }
-    
-#endif
+    }    
+    */
 }
 
 void PlanetRenderer::setup() {
@@ -171,15 +162,12 @@ void PlanetRenderer::setup() {
 }
 
 void PlanetRenderer::display() {
-    // const int fpsesSize = 30;
-    // static float fpses[fpsesSize];
-    // static int fpsIndex = 0;
     unsigned long long start = Util::timeMillis();
-
-    static unsigned long long last = start;
     static int fps = 0;
     static int lastFps = 60;
-    
+    static unsigned long long last = start;
+
+    // ---------------- rendering setup
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     //glClear(GL_COLOR_BUFFER_BIT);
     // GLfloat amb[] = { .4, .4, .4, 1 };
@@ -189,11 +177,9 @@ void PlanetRenderer::display() {
     
     glPushMatrix();
     doTransformations();
-
     glRotatef(viewAngle, 0, 1, 0);
-    // glRotatef(90,1,0,0);
-    // glutSolidSphere(_planet->getRadius(),50,50); // TODO actually render planet
 
+    // ---------------- actually draw the planet
     std::list<ROAMTriangle*>::iterator i;
     for (i = _triangles->begin(); i != _triangles->end(); i++) {
     	(*i)->draw();
@@ -204,14 +190,6 @@ void PlanetRenderer::display() {
     glDisable(GL_TEXTURE_2D);
     glDisable(GL_LIGHTING);
     glLoadIdentity();
-
-    // fpses[fpsIndex] = 1000./(Util::timeMillis()-start);
-    // fpsIndex = (fpsIndex+1)%fpsesSize;
-
-    // float fps = 0;
-    // for (int i = 0; i < fpsesSize; i++)
-    // 	fps += fpses[i];
-    // fps /= fpsesSize;
     
     char text[24];
     memset(text,0,sizeof(text));
@@ -276,7 +254,6 @@ void PlanetRenderer::updateROAM() {
     glm::vec3 here = glm::vec3(10000,0,0); // TODO
 
     // ================================ update mesh
-    // TODO: do we really need to copy over the _triangles list? #optimization
     //std::list<ROAMTriangle*> triangles = std::list<ROAMTriangle*>(*_triangles);
     
     static const float splitPriority = .0001;//1000;
@@ -284,11 +261,8 @@ void PlanetRenderer::updateROAM() {
     std::list<ROAMTriangle*>::iterator end = _triangles->end();
     for (i = _triangles->begin(); i != end; i++) {
     	ROAMTriangle*t = *i;	
-	// printf("0x%x; _triangles->size()==%d, triangles.size()==%d\n", (unsigned long)t,
-	//        _triangles->size(), triangles.size());
-	
-    	if (t->getSplitPriority(_planet, here) > splitPriority) {
-	    //printf("Splitting\n");
+
+	if (t->getSplitPriority(_planet, here) > splitPriority) {
     	    numSplits += t->split(this);
     	}
     }
@@ -306,31 +280,5 @@ void PlanetRenderer::idle() {
 
     //updateROAM();
     
-#if 0
-    static unsigned long long last = 0;
-    unsigned long long now = Util::timeMillis();
-    if (now - last > 20000) {
-    	//updateROAM();
-
-	// std::cout << "Split? ";
-	// int split;
-	// std::cin >> split;
-	// if (split < 0) {
-	//     exit(0);
-	// }
-	
-	// std::list<ROAMTriangle*>::iterator i;
-	// std::list<ROAMTriangle*>::iterator end = _triangles->end();
-	// for (i = _triangles->begin(); i != end; i++) {
-	//     ROAMTriangle*t = *i;
-	//     if (t->_id == split) {
-	// 	t->split(this);
-	//     }
-	// }
-	
-    	last = now;
-    }
-#endif
-
     glutPostRedisplay();
 }
