@@ -6,7 +6,7 @@
 #include "ROAM.hpp"
 
 // comment to suppress updateROAM's metadata output
-//#define UPDATEROAM_PRINTINFO
+#define UPDATEROAM_PRINTINFO
 
 static float viewAngle = 0;
 
@@ -204,7 +204,6 @@ void PlanetRenderer::display() {
     glDisable(GL_TEXTURE_2D);
     glDisable(GL_LIGHTING);
     glLoadIdentity();
-    glWindowPos2i(730, 780);
 
     // fpses[fpsIndex] = 1000./(Util::timeMillis()-start);
     // fpsIndex = (fpsIndex+1)%fpsesSize;
@@ -214,8 +213,14 @@ void PlanetRenderer::display() {
     // 	fps += fpses[i];
     // fps /= fpsesSize;
     
-    char text[16];
+    char text[24];
     memset(text,0,sizeof(text));
+
+    glWindowPos2i(10, 780);
+    snprintf(text,sizeof(text),"%lu triangles", _triangles->size());
+    glutBitmapString(GLUT_BITMAP_HELVETICA_18, (const unsigned char*)text);
+
+    glWindowPos2i(10, 760);
     snprintf(text,sizeof(text),"%d fps",lastFps);
     glutBitmapString(GLUT_BITMAP_HELVETICA_18, (const unsigned char*)text);
 
@@ -272,21 +277,16 @@ void PlanetRenderer::updateROAM() {
 
     // ================================ update mesh
     // TODO: do we really need to copy over the _triangles list? #optimization
-    std::list<ROAMTriangle*> triangles = std::list<ROAMTriangle*>(*_triangles);
+    //std::list<ROAMTriangle*> triangles = std::list<ROAMTriangle*>(*_triangles);
     
-    static const float splitPriority = .2;//1000;
+    static const float splitPriority = .0001;//1000;
     std::list<ROAMTriangle*>::iterator i;
-    std::list<ROAMTriangle*>::iterator end = triangles.end();
-    for (i = triangles.begin(); i != end; i++) {
+    std::list<ROAMTriangle*>::iterator end = _triangles->end();
+    for (i = _triangles->begin(); i != end; i++) {
     	ROAMTriangle*t = *i;	
 	// printf("0x%x; _triangles->size()==%d, triangles.size()==%d\n", (unsigned long)t,
 	//        _triangles->size(), triangles.size());
 	
-	if (_triangles->size() > 10000) {
-	    printf("\n_triangles->size() too big; quitting before it's too late\n");
-	    exit(0);
-	}
-
     	if (t->getSplitPriority(_planet, here) > splitPriority) {
 	    //printf("Splitting\n");
     	    numSplits += t->split(this);
@@ -304,7 +304,7 @@ void PlanetRenderer::idle() {
     viewAngle += 0.02;
 #endif
 
-    updateROAM();
+    //updateROAM();
     
 #if 0
     static unsigned long long last = 0;
