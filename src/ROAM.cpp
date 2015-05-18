@@ -1,5 +1,6 @@
 #include <GL/freeglut.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "ROAM.hpp"
 #include "PlanetRenderer.hpp"
@@ -36,8 +37,14 @@ float ROAMTriangle::getSplitPriority(Planet*p, glm::vec3 pos) {
 				   (_verts[1]+_verts[7])/2,
 				   (_verts[2]+_verts[8])/2);
     float error = fabs(glm::length(midpoint) - p->altitude(glm::normalize(midpoint)));
+
+    // Node: visible error calculation should take into account whether or not this triangle
+    // is in the render frame, and return 0 if it isn't. TODO
     
-    return error;
+    float distance = 1000; //glm::length(midpoint-pos); // TODO
+    //printf("visible error is %f/%f = %f\n", error, distance, error/distance);
+    
+    return error/distance;
 }
 
 void ROAMTriangle::draw() {	// TODO this can be hella optimized
@@ -58,6 +65,29 @@ void ROAMTriangle::draw() {	// TODO this can be hella optimized
     char buf[8] = "abcdefg";
     snprintf(buf,sizeof(buf),"%d",_id);
     glutBitmapString(GLUT_BITMAP_HELVETICA_18, (const unsigned char*)buf);
+
+    glm::vec3 middle = glm::vec3((_verts[0]+_verts[3]+_verts[6])/3,
+				 (_verts[1]+_verts[4]+_verts[7])/3,
+				 (_verts[2]+_verts[5]+_verts[8])/3);
+    
+    glRasterPos3f(((_verts[0]+_verts[3])/2+middle.x)/2,
+		  ((_verts[1]+_verts[4])/2+middle.y)/2,
+		  ((_verts[2]+_verts[5])/2+middle.z)/2);
+    snprintf(buf,sizeof(buf),"%d",_edges[0]?_edges[0]->_id:-1);
+    glutBitmapString(GLUT_BITMAP_HELVETICA_18, (const unsigned char*)buf);
+
+    glRasterPos3f(((_verts[3]+_verts[6])/2+middle.x)/2,
+    		  ((_verts[4]+_verts[7])/2+middle.y)/2,
+    		  ((_verts[5]+_verts[8])/2+middle.z)/2);
+    snprintf(buf,sizeof(buf),"%d",_edges[1]?_edges[1]->_id:-1);
+    glutBitmapString(GLUT_BITMAP_HELVETICA_18, (const unsigned char*)buf);
+
+    glRasterPos3f(((_verts[6]+_verts[0])/2+middle.x)/2,
+    		  ((_verts[7]+_verts[1])/2+middle.y)/2,
+    		  ((_verts[8]+_verts[2])/2+middle.z)/2);
+    snprintf(buf,sizeof(buf),"%d",_edges[2]?_edges[2]->_id:-1);
+    glutBitmapString(GLUT_BITMAP_HELVETICA_18, (const unsigned char*)buf);
+
 #endif
 }
 
@@ -66,15 +96,16 @@ float ROAMDiamond::getMergePriority(glm::vec3 pos) { // TODO
 }
 
 void ROAMTriangle::split(PlanetRenderer*pr) {
-    std::cout << "Splitting: " << this << "\n";
+    std::cout << "Splitting: " << this << ", with other: " << _edges[2] << "\n";
     
     // We're not in a square, so the other triangle needs to split first
-    if (_edges[2]->_edges[2] != this) {
+    if (_edges[2]->_edges[2] != this) {	// && _edges[2]->_edges[2]->_edges[2] != this) {
 	printf("not in a square; not splitting\n");
-	return;
+	std::cout << "  edge2: " << _edges[2] << " edge2->edge2: " << _edges[2]->_edges[2] << "\n";
+	//return;
 	_edges[2]->split(pr);
 	if (_edges[2]->_edges[2] != this) {
-	    printf("aahhhhh\n");
+	    printf("AAHHHHH\n");
 	}
     }
 
@@ -85,13 +116,17 @@ void ROAMTriangle::split(PlanetRenderer*pr) {
 	Util::aToVec3(_verts+6),
 	Util::aToVec3(_edges[2]->_verts+3)
     };
-    
+
+#if 1 				// TODO MAKE THIS #IF 1 WHEN STOP USING GRID
     // find new vertex; its vector is through the midpoint of our hypotenuse
     glm::vec3 newVert = glm::normalize(verts[0]+verts[2]);
     // TODO: use planet to determine proper scaling factor for newVert
     //float altitude = pr->_planet->altitude();
     float altitude = 6000;
     newVert *= altitude;
+#else
+    glm::vec3 newVert = Util::mulvec3(verts[0]+verts[2],.5);
+#endif
     
     // create diamond and assign references and stuff
     ROAMDiamond*diamond = new ROAMDiamond();
@@ -113,6 +148,12 @@ void ROAMTriangle::split(PlanetRenderer*pr) {
     ROAMTriangle*oldEdges[] = {
 	_edges[0], _edges[1], _edges[2]->_edges[0], _edges[2]->_edges[1]
     };
+
+    std::cout << "  oldEdges: [";
+    for (int i = 0; i < 4; i++) {
+	std::cout << oldEdges[i] << ", ";
+    }
+    std::cout << "]\n";
     
     // reposition triangle vertices
     Util::vec3ToA(verts[1], curr->_verts);
@@ -133,14 +174,14 @@ void ROAMTriangle::split(PlanetRenderer*pr) {
 
     // modify surrounding triangles' edges
     for (int i = 0; i < 3; i++) {
-	if (curr->_edges[1]->_edges[i] == this)
+	if (curr->_edges[1]->_edges[i] == curr)
 	    curr->_edges[1]->_edges[i] = new0;
     }
     for (int i = 0; i < 3; i++) {
-	if (othr->_edges[1]->_edges[i] == this)
+	if (othr->_edges[1]->_edges[i] == othr)
 	    othr->_edges[1]->_edges[i] = new1;
     }
-    
+
     // reposition triangle edges
     curr->_edges[0] = new0;
     curr->_edges[1] = new1;
@@ -164,6 +205,14 @@ void ROAMTriangle::split(PlanetRenderer*pr) {
     // for (i = pr->_triangles->begin(); i != pr->_triangles->end(); i++) {
     // 	std::cout << "  " << (*i) << "\n";
     // }
+
+    std::cout << "  Splitted. Current status:\n";
+    std::cout << "  curr: " << curr << "\n";
+    std::cout << "  new0: " << new0 << "\n";
+    std::cout << "  othr: " << othr << "\n";
+    std::cout << "  new1: " << new1 << "\n";
+
+    //sleep(5);
 }
 
 std::ostream&operator<<(std::ostream&strm, const ROAMTriangle*t) {

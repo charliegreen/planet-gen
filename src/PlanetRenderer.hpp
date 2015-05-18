@@ -8,6 +8,9 @@
 
 #include "ROAM.hpp"
 
+// comment to keep from slowly rotating planets
+//#define PLANETRENDERER_ROTATE
+
 class PlanetRenderer : public NavigableRenderer {
     friend class ROAMTriangle;
     friend class ROAMDiamond;
@@ -22,6 +25,7 @@ public:
     void setup();
     void display();
     void idle();
+    void keyboard(unsigned char key, int x, int y);
 };
 
 #endif

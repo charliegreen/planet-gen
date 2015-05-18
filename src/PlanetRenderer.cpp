@@ -12,6 +12,7 @@ PlanetRenderer::PlanetRenderer(Planet*p):
     // ================================================================ set up basic ROAM cube
     _triangles = new std::list<ROAMTriangle*>();
 
+#if 1
     float r = _planet->getRadius()/sqrt(3);
     glm::vec3 verts[] = {
 	glm::vec3( r, r, r), glm::vec3( r, r,-r),
@@ -82,6 +83,47 @@ PlanetRenderer::PlanetRenderer(Planet*p):
     // t015->split(this);
     // t015->split(this);
     // t015->split(this);
+
+#else
+#define GRIDSIZE 3
+#define GRIDWIDTH 4500
+    
+    ROAMTriangle*grid[GRIDSIZE][GRIDSIZE][2];
+    for (int i = 0; i < GRIDSIZE; i++) {
+	for (int j = 0; j < GRIDSIZE; j++) {
+	    int x1 = i*GRIDWIDTH-GRIDSIZE*GRIDWIDTH/2;
+	    int y1 = j*GRIDWIDTH-GRIDSIZE*GRIDWIDTH/2;
+	    int x2 = x1 + GRIDWIDTH;
+	    int y2 = y1 + GRIDWIDTH;
+	    glm::vec3 xy = glm::vec3(x1,y1,0);
+	    glm::vec3 xY = glm::vec3(x1,y2,0);
+	    glm::vec3 Xy = glm::vec3(x2,y1,0);
+	    glm::vec3 XY = glm::vec3(x2,y2,0);
+	    
+	    grid[i][j][0] = new ROAMTriangle(Xy,xy,xY);
+	    grid[i][j][1] = new ROAMTriangle(xY,XY,Xy);	
+	    grid[i][j][0]->_edges[0] = NULL;
+	    grid[i][j][0]->_edges[1] = NULL;
+	    grid[i][j][0]->_edges[2] = grid[i][j][1];
+	    grid[i][j][1]->_edges[0] = NULL;
+	    grid[i][j][1]->_edges[1] = NULL;
+	    grid[i][j][1]->_edges[2] = grid[i][j][0];
+
+	    _triangles->push_front(grid[i][j][0]); // we still have grid to modify edge pointers
+	    _triangles->push_front(grid[i][j][1]);
+	}
+    }
+
+    for (int i = 0; i < GRIDSIZE; i++) {
+	for (int j = 0; j < GRIDSIZE; j++) {
+	    grid[i][j][0]->_edges[0] = j>0 ? grid[i][j-1][1] : NULL;
+	    grid[i][j][0]->_edges[1] = i>0 ? grid[i-1][j][1] : NULL;
+	    grid[i][j][1]->_edges[0] = j<GRIDSIZE-1 ? grid[i][j+1][0] : NULL;
+	    grid[i][j][1]->_edges[1] = i<GRIDSIZE-1 ? grid[i+1][j][0] : NULL;
+	}
+    }
+    
+#endif
 }
 
 void PlanetRenderer::setup() {
@@ -92,12 +134,13 @@ void PlanetRenderer::setup() {
     GLfloat light0_dif[] = { 0.4, 0.4, 0.4, 1 };
     glLightfv(GL_LIGHT0, GL_AMBIENT, light0_amb);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, light0_dif);
-    
-    glEnable(GL_LIGHT1);
-    GLfloat light1_dif[] = { 0.6, 0.6, 0.4, 1 };
-    GLfloat light1_pos[] = { 100000, 0, 0, 0 };
-    glLightfv(GL_LIGHT1, GL_DIFFUSE,  light1_dif);
-    glLightfv(GL_LIGHT1, GL_POSITION, light1_pos);
+
+    // TODO bring back the sun
+    // glEnable(GL_LIGHT1);
+    // GLfloat light1_dif[] = { 0.6, 0.6, 0.4, 1 };
+    // GLfloat light1_pos[] = { 100000, 0, 0, 0 };
+    // glLightfv(GL_LIGHT1, GL_DIFFUSE,  light1_dif);
+    // glLightfv(GL_LIGHT1, GL_POSITION, light1_pos);
 
     // set up other stuff
     // glEnable(GL_LINE_SMOOTH);
@@ -141,23 +184,51 @@ void PlanetRenderer::display() {
     glutSwapBuffers();
 }
 
+void PlanetRenderer::keyboard(unsigned char key, int x, int y){
+    NavigableRenderer::keyboard(key,x,y);
+
+    switch(key) {
+    case ' ':{
+	std::cout << "Split? ";
+	int split;
+	std::cin >> split;
+	if (split < 0)
+	    return;
+	
+	std::list<ROAMTriangle*>::iterator i;
+	std::list<ROAMTriangle*>::iterator end = _triangles->end();
+	for (i = _triangles->begin(); i != end; i++) {
+	    ROAMTriangle*t = *i;
+	    if (t->_id == split) {
+		t->split(this);
+	    }
+	}
+    }break;
+
+    case '.':{
+	updateROAM();
+    }break;
+    }
+}
+
 void PlanetRenderer::updateROAM() {
-    printf("Updating ROAM...\n");
+    printf("================================ UPDATING ROAM\n");
+
     // current camera location
-    glm::vec3 here = glm::vec3(0); // TODO
+    glm::vec3 here = glm::vec3(10000,0,0); // TODO
 
     // ================================ update mesh
     std::list<ROAMTriangle*> triangles = std::list<ROAMTriangle*>(*_triangles);
     
-    static const float splitPriority = 1000;
+    static const float splitPriority = .2;//1000;
     std::list<ROAMTriangle*>::iterator i;
     std::list<ROAMTriangle*>::iterator end = triangles.end();
     for (i = triangles.begin(); i != end; i++) {
     	ROAMTriangle*t = *i;	
-	printf("0x%x; _triangles->size()==%d, triangles.size()==%d\n", (unsigned long)t,
-	       _triangles->size(), triangles.size());
+	// printf("0x%x; _triangles->size()==%d, triangles.size()==%d\n", (unsigned long)t,
+	//        _triangles->size(), triangles.size());
 	
-	if (_triangles->size() > 40) {
+	if (_triangles->size() > 100) {
 	    printf("_triangles->size() too big; quitting before it's too late\n");
 	    exit(0);
 	}
@@ -167,23 +238,39 @@ void PlanetRenderer::updateROAM() {
     	    t->split(this);
     	}
     }
-    printf("Done updating ROAM.\n");
+    printf("================ DONE UPDATING ROAM.\n");
 }
 
 void PlanetRenderer::idle() {
+#ifdef PLANETRENDERER_ROTATE
     viewAngle += 0.02;
+#endif
 
+#if 0
     static unsigned long long last = 0;
     unsigned long long now = Util::timeMillis();
-    if (now - last > 10000) {
-	printf("================================\n");
-    	updateROAM();
+    if (now - last > 20000) {
+    	//updateROAM();
+
+	// std::cout << "Split? ";
+	// int split;
+	// std::cin >> split;
+	// if (split < 0) {
+	//     exit(0);
+	// }
+	
+	// std::list<ROAMTriangle*>::iterator i;
+	// std::list<ROAMTriangle*>::iterator end = _triangles->end();
+	// for (i = _triangles->begin(); i != end; i++) {
+	//     ROAMTriangle*t = *i;
+	//     if (t->_id == split) {
+	// 	t->split(this);
+	//     }
+	// }
+	
     	last = now;
     }
-    // if (last == 0) {
-    // 	updateROAM();
-    // 	last = now;
-    // }
+#endif
     
     glutPostRedisplay();
 }

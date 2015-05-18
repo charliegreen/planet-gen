@@ -17,3 +17,7 @@ unsigned long long Util::timeMillis() {
     gettimeofday(&tp, NULL);
     return tp.tv_sec*1000+tp.tv_usec/1000;
 }
+
+glm::vec3 Util::mulvec3(glm::vec3 v, float a) {
+    return v*a;
+}

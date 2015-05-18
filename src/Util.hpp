@@ -15,6 +15,7 @@ class Util {
 public:
     static glm::vec3 aToVec3(float array[]);
     static void vec3ToA(glm::vec3 v, float*array);
+    static glm::vec3 mulvec3(glm::vec3 v, float a);
     static unsigned long long timeMillis();
 };
 
