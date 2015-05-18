@@ -5,7 +5,8 @@
 #include "ROAM.hpp"
 #include "PlanetRenderer.hpp"
 
-#define TRIANGLE_DRAW_IDS
+//#define TRIANGLE_DRAW_IDS
+//#define PRINT_SPLIT_DEBUG_INFO
 
 int ROAMTriangle::_numTriangles = 0;
 
@@ -95,17 +96,22 @@ float ROAMDiamond::getMergePriority(glm::vec3 pos) { // TODO
     return 0;
 }
 
-void ROAMTriangle::split(PlanetRenderer*pr) {
+int ROAMTriangle::split(PlanetRenderer*pr) {
+    int numSplits = 1;
+#ifdef PRINT_SPLIT_DEBUG_INFO
     std::cout << "Splitting: " << this << ", with other: " << _edges[2] << "\n";
+#endif
     
     // We're not in a square, so the other triangle needs to split first
     if (_edges[2]->_edges[2] != this) {	// && _edges[2]->_edges[2]->_edges[2] != this) {
-	printf("not in a square; not splitting\n");
+#ifdef PRINT_SPLIT_DEBUG_INFO
 	std::cout << "  edge2: " << _edges[2] << " edge2->edge2: " << _edges[2]->_edges[2] << "\n";
-	//return;
-	_edges[2]->split(pr);
+#endif
+	numSplits += _edges[2]->split(pr);
 	if (_edges[2]->_edges[2] != this) {
-	    printf("AAHHHHH\n");
+	    printf("ERROR: BAD SPLIT PERFORMED??\n");
+	    std::cout << "  edge2: " << _edges[2] << " edge2->edge2: " << _edges[2]->_edges[2] << "\n";
+	    exit(0);
 	}
     }
 
@@ -149,11 +155,13 @@ void ROAMTriangle::split(PlanetRenderer*pr) {
 	_edges[0], _edges[1], _edges[2]->_edges[0], _edges[2]->_edges[1]
     };
 
+#ifdef PRINT_SPLIT_DEBUG_INFO
     std::cout << "  oldEdges: [";
     for (int i = 0; i < 4; i++) {
 	std::cout << oldEdges[i] << ", ";
     }
     std::cout << "]\n";
+#endif
     
     // reposition triangle vertices
     Util::vec3ToA(verts[1], curr->_verts);
@@ -200,6 +208,7 @@ void ROAMTriangle::split(PlanetRenderer*pr) {
     pr->_triangles->push_front(diamond->_children[0]);
     pr->_triangles->push_front(diamond->_children[1]);
 
+#ifdef PRINT_SPLIT_DEBUG_INFO
     // std::cout << "Splitted. New status:\n";
     // std::list<ROAMTriangle*>::iterator i;
     // for (i = pr->_triangles->begin(); i != pr->_triangles->end(); i++) {
@@ -211,8 +220,9 @@ void ROAMTriangle::split(PlanetRenderer*pr) {
     std::cout << "  new0: " << new0 << "\n";
     std::cout << "  othr: " << othr << "\n";
     std::cout << "  new1: " << new1 << "\n";
+#endif
 
-    //sleep(5);
+    return numSplits;
 }
 
 std::ostream&operator<<(std::ostream&strm, const ROAMTriangle*t) {

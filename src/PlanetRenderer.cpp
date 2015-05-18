@@ -212,12 +212,15 @@ void PlanetRenderer::keyboard(unsigned char key, int x, int y){
 }
 
 void PlanetRenderer::updateROAM() {
-    printf("================================ UPDATING ROAM\n");
-
+    printf("Updating ROAM...");
+    unsigned long long start = Util::timeMillis();
+    int numSplits = 0;
+    
     // current camera location
     glm::vec3 here = glm::vec3(10000,0,0); // TODO
 
     // ================================ update mesh
+    // TODO: do we really need to copy over the _triangles list? #optimization
     std::list<ROAMTriangle*> triangles = std::list<ROAMTriangle*>(*_triangles);
     
     static const float splitPriority = .2;//1000;
@@ -228,17 +231,19 @@ void PlanetRenderer::updateROAM() {
 	// printf("0x%x; _triangles->size()==%d, triangles.size()==%d\n", (unsigned long)t,
 	//        _triangles->size(), triangles.size());
 	
-	if (_triangles->size() > 100) {
-	    printf("_triangles->size() too big; quitting before it's too late\n");
+	if (_triangles->size() > 10000) {
+	    printf("\n_triangles->size() too big; quitting before it's too late\n");
 	    exit(0);
 	}
 
     	if (t->getSplitPriority(_planet, here) > splitPriority) {
 	    //printf("Splitting\n");
-    	    t->split(this);
+    	    numSplits += t->split(this);
     	}
     }
-    printf("================ DONE UPDATING ROAM.\n");
+    
+    printf("Done. (%d splits, %d total triangles) [%llums]\n",
+	   numSplits, _triangles->size(), Util::timeMillis()-start);
 }
 
 void PlanetRenderer::idle() {

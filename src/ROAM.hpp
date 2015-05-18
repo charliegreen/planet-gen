@@ -25,7 +25,8 @@ public:
     //void getVertArray(GLfloat*array);
     void draw();
 
-    void split(PlanetRenderer*pr);
+    // split returns the number of splits performed
+    int split(PlanetRenderer*pr);
 
     friend std::ostream&operator<<(std::ostream&strm, const ROAMTriangle*t);
 };
