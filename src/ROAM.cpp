@@ -50,8 +50,14 @@ float ROAMTriangle::getSplitPriority(Planet*p, glm::vec3 pos) {
 
 void ROAMTriangle::draw() {	// TODO this can be hella optimized
     glBegin(GL_TRIANGLES);
-    glColor3f(.1,.2,.3);
 
+    glm::vec3 o = Util::aToVec3(_verts);
+    glm::vec3 u = Util::aToVec3(_verts+3)-o;
+    glm::vec3 v = Util::aToVec3(_verts+6)-o;
+
+    glm::vec3 normal = glm::normalize(glm::cross(u,v));
+    glNormal3f(normal.x, normal.y, normal.z);
+    
     glVertex3f(_verts[0], _verts[1], _verts[2]);
     glVertex3f(_verts[3], _verts[4], _verts[5]);
     glVertex3f(_verts[6], _verts[7], _verts[8]);

@@ -1,4 +1,5 @@
-#include <GL/glut.h>
+#include <GL/freeglut.h>
+#include <string.h>
 
 #include "PlanetRenderer.hpp"
 #include "ROAM.hpp"
@@ -135,20 +136,26 @@ void PlanetRenderer::setup() {
     glLightfv(GL_LIGHT0, GL_AMBIENT, light0_amb);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, light0_dif);
 
-    // TODO bring back the sun
-    // glEnable(GL_LIGHT1);
-    // GLfloat light1_dif[] = { 0.6, 0.6, 0.4, 1 };
-    // GLfloat light1_pos[] = { 100000, 0, 0, 0 };
-    // glLightfv(GL_LIGHT1, GL_DIFFUSE,  light1_dif);
-    // glLightfv(GL_LIGHT1, GL_POSITION, light1_pos);
+    glEnable(GL_LIGHT1);
+    GLfloat light1_dif[] = { 0.6, 0.6, 0.4, 1 };
+    GLfloat light1_pos[] = { 100000, 0, 0, 0 };
+    glLightfv(GL_LIGHT1, GL_DIFFUSE,  light1_dif);
+    glLightfv(GL_LIGHT1, GL_POSITION, light1_pos);
 
     // set up other stuff
     // glEnable(GL_LINE_SMOOTH);
     // glEnable(GL_BLEND);
     // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    //glEnable(GL_CULL_FACE);
+#if PLANETRENDERER_WIREFRAME
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+#else
+    glEnable(GL_CULL_FACE);
+    
+    glEnable(GL_STENCIL_TEST);
+    glStencilFunc(GL_ALWAYS, 3, 0xffffffff);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+#endif
     
     glMatrixMode(GL_PROJECTION);
     //gluPerspective(50, 1, 1.9*_planet->getRadius(), 4.1*_planet->getRadius());
@@ -160,6 +167,8 @@ void PlanetRenderer::setup() {
 }
 
 void PlanetRenderer::display() {
+    unsigned long long start = Util::timeMillis();
+    
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     //glClear(GL_COLOR_BUFFER_BIT);
     // GLfloat amb[] = { .4, .4, .4, 1 };
@@ -179,8 +188,21 @@ void PlanetRenderer::display() {
     	(*i)->draw();
     }
     
-    glPopMatrix();
+    // ---------------- draw text on screen
+    glPushAttrib(GL_LIGHTING);
+    glDisable(GL_TEXTURE_2D);
+    glDisable(GL_LIGHTING);
+    glLoadIdentity();
+    glWindowPos2i(700, 780);
 
+    char text[16];
+    memset(text,0,sizeof(text));
+    snprintf(text,sizeof(text),"%0.2ffps",1000./(Util::timeMillis()-start));
+    glutBitmapString(GLUT_BITMAP_HELVETICA_18, (const unsigned char*)text);
+
+    glPopAttrib();
+    glPopMatrix();
+    
     glutSwapBuffers();
 }
 
@@ -242,12 +264,12 @@ void PlanetRenderer::updateROAM() {
     	}
     }
     
-    printf("Done. (%d splits, %d total triangles) [%llums]\n",
+    printf("Done. (%d splits, %lu total triangles) [%llums]\n",
 	   numSplits, _triangles->size(), Util::timeMillis()-start);
 }
 
 void PlanetRenderer::idle() {
-#ifdef PLANETRENDERER_ROTATE
+#if PLANETRENDERER_ROTATE
     viewAngle += 0.02;
 #endif
 

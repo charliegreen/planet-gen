@@ -5,6 +5,11 @@
 #include "TestRenderer.hpp"
 #include "PlanetRenderer.hpp"
 
+#include <GL/freeglut_ext.h>
+// We have to import this because it's technically an OpenGL extension or something? See:
+// https://stackoverflow.com/questions/18821558/function-glwindowpos2i-could-not-be-resolved
+PFNGLWINDOWPOS2IPROC glWindowPos2i;
+
 Main*Main::_instance = NULL;
 Renderer*Main::_renderer = NULL;
 
@@ -43,6 +48,8 @@ void keyboard(unsigned char key, int x, int y){
 
 int main(int argc, char*argv[]){
     glutInit(&argc, argv);
+    // see comment at top of file, by definition of glWindowPos2i
+    glWindowPos2i = (PFNGLWINDOWPOS2IPROC) glutGetProcAddress("glWindowPos2i");
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(800,800);
     glutCreateWindow(NAME);

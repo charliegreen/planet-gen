@@ -8,8 +8,11 @@
 
 #include "ROAM.hpp"
 
-// comment to keep from slowly rotating planets
-//#define PLANETRENDERER_ROTATE
+// set to 0 to keep from slowly rotating planets
+#define PLANETRENDERER_ROTATE 1
+
+// set to 1 to enable wireframe drawing
+#define PLANETRENDERER_WIREFRAME 0
 
 class PlanetRenderer : public NavigableRenderer {
     friend class ROAMTriangle;
@@ -27,5 +30,8 @@ public:
     void idle();
     void keyboard(unsigned char key, int x, int y);
 };
+
+// see comment at top of Main.cpp
+extern PFNGLWINDOWPOS2IPROC glWindowPos2i;
 
 #endif
