@@ -31,20 +31,27 @@ ROAMTriangle::ROAMTriangle(glm::vec3 a, glm::vec3 b, glm::vec3 c):
     _verts[8] = c.z;
 }
 
-float ROAMTriangle::getSplitPriority(glm::vec3 pos) {
-    // // compute error
-    // //glm::vec3 midpoint = (Util::aToVec3(_verts)+Util::aToVec3(_verts+6));
-    // glm::vec3 midpoint = glm::vec3((_verts[0]+_verts[6])/2,
-    // 				   (_verts[1]+_verts[7])/2,
-    // 				   (_verts[2]+_verts[8])/2);
-    // float error = fabs(glm::length(midpoint) - p->altitude(glm::normalize(midpoint)));
-
+float ROAMTriangle::getSplitPriority(glm::vec3 pos, glm::vec3 dir) {
     // Node: visible error calculation should take into account whether or not this triangle
     // is in the render frame, and return 0 if it isn't. TODO
+
+    // return 0 if this triangle will be culled from rendering
+    glm::vec3 o = Util::aToVec3(_verts);
+    glm::vec3 u = Util::aToVec3(_verts+3)-o;
+    glm::vec3 v = Util::aToVec3(_verts+6)-o;
+    glm::vec3 normal = glm::normalize(glm::cross(u,v));
+
+    if (glm::length(normal - glm::normalize(dir)) <= 1) {
+	return 0;
+    }
     
-    float distance = 1000; //glm::length(midpoint-pos); // TODO
-    //printf("visible error is %f/%f = %f\n", error, distance, error/distance);
-    
+    // compute midpoint
+    glm::vec3 midpoint = glm::vec3((_verts[0]+_verts[6])/2,
+    				   (_verts[1]+_verts[7])/2,
+    				   (_verts[2]+_verts[8])/2);
+    // float error = fabs(glm::length(midpoint) - p->altitude(glm::normalize(midpoint)));
+    float distance = glm::length(midpoint-pos);
+    //printf("visible error is %f/%f = %f\n", _error, distance, _error/distance);    
     return _error/distance;
 }
 
@@ -267,8 +274,8 @@ ROAMDiamond::ROAMDiamond(ROAMTriangle*p1,ROAMTriangle*p2,ROAMTriangle*c1,ROAMTri
     c2->_diamond = this;
 }
 
-float ROAMDiamond::getMergePriority(glm::vec3 pos) {
-    return _parents[0]->getSplitPriority(pos);
+float ROAMDiamond::getMergePriority(glm::vec3 pos, glm::vec3 dir) {
+    return _parents[0]->getSplitPriority(pos, dir);
 }
 
 void ROAMDiamond::merge(PlanetRenderer*pr) {

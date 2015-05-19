@@ -23,7 +23,7 @@ public:
     ROAMTriangle(ROAMTriangle*parent); // for split
     ROAMTriangle(glm::vec3 a, glm::vec3 b, glm::vec3 c); // for the main 12
     
-    float getSplitPriority(glm::vec3 pos);
+    float getSplitPriority(glm::vec3 pos, glm::vec3 dir);
     void draw();
     void updateError(Planet*p);	// updates the cached error
 
@@ -40,7 +40,7 @@ public:
     float _oldError;
 
     ROAMDiamond(ROAMTriangle*p1,ROAMTriangle*p2,ROAMTriangle*c1,ROAMTriangle*c2);
-    float getMergePriority(glm::vec3 pos);
+    float getMergePriority(glm::vec3 pos, glm::vec3 dir);
     void merge(PlanetRenderer*pr);
 };
 

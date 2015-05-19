@@ -52,3 +52,11 @@ void NavigableRenderer::keyboard(unsigned char key, int x, int y){
     default: break;
     }
 }
+
+glm::vec3 NavigableRenderer::getPosition() {
+    return _pos;
+}
+
+glm::vec3 NavigableRenderer::getDirection() {
+    return _dir;
+}

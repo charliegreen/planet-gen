@@ -256,7 +256,8 @@ void PlanetRenderer::updateROAM() {
     int numSplits = 0;
     
     // current camera location
-    glm::vec3 here = glm::vec3(10000,0,0); // TODO
+    glm::vec3 pos = getPosition();
+    glm::vec3 dir = getDirection();
 
     // ================================ update mesh
     //std::list<ROAMTriangle*> triangles = std::list<ROAMTriangle*>(*_triangles);
@@ -267,7 +268,7 @@ void PlanetRenderer::updateROAM() {
     for (i = _triangles->begin(); i != end; i++) {
     	ROAMTriangle*t = *i;	
 
-	if (t->getSplitPriority(here) > splitPriority) {
+	if (t->getSplitPriority(pos,dir) > splitPriority) {
     	    numSplits += t->split(this);
     	}
     }
