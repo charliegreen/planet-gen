@@ -11,7 +11,9 @@
 static float viewAngle = 0;
 
 PlanetRenderer::PlanetRenderer(Planet*p):
-    NavigableRenderer(0,0,3*p->getRadius(),0,0,0),
+    NavigableRenderer(glm::vec3(0,0,3*p->getRadius()),
+		      glm::vec3(0,0,-1),
+		      glm::vec3(0,1,0)),
     _planet(p)
 {
     _triangles = new std::list<ROAMTriangle*>();
@@ -155,10 +157,6 @@ void PlanetRenderer::setup() {
     glMatrixMode(GL_PROJECTION);
     //gluPerspective(50, 1, 1.9*_planet->getRadius(), 4.1*_planet->getRadius());
     gluPerspective(50, 1, 1000, 4*_planet->getRadius());
-    
-    //glMatrixMode(GL_MODELVIEW);
-    //gluLookAt(0,0,3*_planet->getRadius(),0,0,0,0,1,0);
-    NavigableRenderer::setup();
 }
 
 void PlanetRenderer::display() {
