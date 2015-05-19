@@ -10,14 +10,14 @@
 
 int ROAMTriangle::_numTriangles = 0;
 
-ROAMTriangle::ROAMTriangle(ROAMTriangle*parent, ROAMDiamond*diamond):
-    _parent(parent), _diamond(diamond)
+ROAMTriangle::ROAMTriangle(ROAMTriangle*parent):
+    _error(0), _parent(parent), _diamond(NULL)
 {
     _id = _numTriangles++;
 }
-    
+
 ROAMTriangle::ROAMTriangle(glm::vec3 a, glm::vec3 b, glm::vec3 c):
-    _parent(NULL), _diamond(NULL)
+    _error(0), _parent(NULL), _diamond(NULL)
 {
     _id = _numTriangles++;
     _verts[0] = a.x;
@@ -31,13 +31,13 @@ ROAMTriangle::ROAMTriangle(glm::vec3 a, glm::vec3 b, glm::vec3 c):
     _verts[8] = c.z;
 }
 
-float ROAMTriangle::getSplitPriority(Planet*p, glm::vec3 pos) {
-    // compute error
-    //glm::vec3 midpoint = (Util::aToVec3(_verts)+Util::aToVec3(_verts+6));
-    glm::vec3 midpoint = glm::vec3((_verts[0]+_verts[6])/2,
-				   (_verts[1]+_verts[7])/2,
-				   (_verts[2]+_verts[8])/2);
-    float error = fabs(glm::length(midpoint) - p->altitude(glm::normalize(midpoint)));
+float ROAMTriangle::getSplitPriority(glm::vec3 pos) {
+    // // compute error
+    // //glm::vec3 midpoint = (Util::aToVec3(_verts)+Util::aToVec3(_verts+6));
+    // glm::vec3 midpoint = glm::vec3((_verts[0]+_verts[6])/2,
+    // 				   (_verts[1]+_verts[7])/2,
+    // 				   (_verts[2]+_verts[8])/2);
+    // float error = fabs(glm::length(midpoint) - p->altitude(glm::normalize(midpoint)));
 
     // Node: visible error calculation should take into account whether or not this triangle
     // is in the render frame, and return 0 if it isn't. TODO
@@ -45,7 +45,15 @@ float ROAMTriangle::getSplitPriority(Planet*p, glm::vec3 pos) {
     float distance = 1000; //glm::length(midpoint-pos); // TODO
     //printf("visible error is %f/%f = %f\n", error, distance, error/distance);
     
-    return error/distance;
+    return _error/distance;
+}
+
+void ROAMTriangle::updateError(Planet*p) {
+    glm::vec3 midpoint = glm::vec3((_verts[0]+_verts[6])/2,
+				   (_verts[1]+_verts[7])/2,
+				   (_verts[2]+_verts[8])/2);
+    float altAtMidpoint = p->altitude(glm::normalize(midpoint));
+    _error = fabs(glm::length(midpoint) - altAtMidpoint);
 }
 
 void ROAMTriangle::draw() {	// TODO this can be hella optimized
@@ -98,10 +106,6 @@ void ROAMTriangle::draw() {	// TODO this can be hella optimized
 #endif
 }
 
-float ROAMDiamond::getMergePriority(glm::vec3 pos) { // TODO
-    return 0;
-}
-
 int ROAMTriangle::split(PlanetRenderer*pr) {
     int numSplits = 1;
 #ifdef PRINT_SPLIT_DEBUG_INFO
@@ -141,15 +145,17 @@ int ROAMTriangle::split(PlanetRenderer*pr) {
 #endif
     
     // create diamond and assign references and stuff
-    ROAMDiamond*diamond = new ROAMDiamond();
-    diamond->_parents[0] = this;
-    diamond->_parents[1] = _edges[2];
-    diamond->_children[0] = new ROAMTriangle(this, diamond);
-    diamond->_children[1] = new ROAMTriangle(_edges[2], diamond);
-    _diamond = diamond;
-    _edges[2]->_diamond = diamond;
-    diamond->_children[0]->_diamond = diamond;
-    diamond->_children[1]->_diamond = diamond;
+    ROAMDiamond*diamond = new ROAMDiamond(this, _edges[2],
+					  new ROAMTriangle(this),
+					  new ROAMTriangle(_edges[2]));
+    // diamond->_parents[0] = this;
+    // diamond->_parents[1] = _edges[2];
+    // diamond->_children[0] = new ROAMTriangle(this, diamond);
+    // diamond->_children[1] = new ROAMTriangle(_edges[2], diamond);
+    // _diamond = diamond;
+    // _edges[2]->_diamond = diamond;
+    // diamond->_children[0]->_diamond = diamond;
+    // diamond->_children[1]->_diamond = diamond;
 
     // store triangles and old edges
     ROAMTriangle*curr = this;
@@ -209,10 +215,17 @@ int ROAMTriangle::split(PlanetRenderer*pr) {
     new1->_edges[0] = curr;
     new1->_edges[1] = othr;
     new1->_edges[2] = oldEdges[3];
+
+    // update triangle errors
+    curr->updateError(pr->_planet);
+    othr->updateError(pr->_planet);
+    new0->updateError(pr->_planet);
+    new1->updateError(pr->_planet);
     
-    // add new triangles to display list
-    pr->_triangles->push_front(diamond->_children[0]);
-    pr->_triangles->push_front(diamond->_children[1]);
+    // add new triangles and diamond to list
+    pr->_triangles->push_front(new0);
+    pr->_triangles->push_front(new1);
+    pr->_diamonds->push_front(diamond);
 
 #ifdef PRINT_SPLIT_DEBUG_INFO
     // std::cout << "Splitted. New status:\n";
@@ -239,4 +252,25 @@ std::ostream&operator<<(std::ostream&strm, const ROAMTriangle*t) {
 		<<(t->_edges[0] ? t->_edges[0]->_id : -1)<<", "
 		<<(t->_edges[1] ? t->_edges[1]->_id : -1)<<", "
 		<<(t->_edges[2] ? t->_edges[2]->_id : -1)<<")" << "]";
+}
+
+ROAMDiamond::ROAMDiamond(ROAMTriangle*p1,ROAMTriangle*p2,ROAMTriangle*c1,ROAMTriangle*c2):
+    _oldError(p1->_error)
+{
+    _parents[0] = p1;
+    _parents[1] = p2;
+    _children[0] = c1;
+    _children[1] = c2;
+    p1->_diamond = this;
+    p2->_diamond = this;
+    c1->_diamond = this;
+    c2->_diamond = this;
+}
+
+float ROAMDiamond::getMergePriority(glm::vec3 pos) {
+    return _parents[0]->getSplitPriority(pos);
+}
+
+void ROAMDiamond::merge(PlanetRenderer*pr) {
+    // TODO
 }

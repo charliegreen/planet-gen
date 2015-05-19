@@ -20,6 +20,7 @@ class PlanetRenderer : public NavigableRenderer {
 
     Planet*_planet;
     std::list<ROAMTriangle*>*_triangles;
+    std::list<ROAMDiamond*>* _diamonds;
 
     void updateROAM();
     

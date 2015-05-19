@@ -17,6 +17,7 @@ PlanetRenderer::PlanetRenderer(Planet*p):
     _planet(p)
 {
     _triangles = new std::list<ROAMTriangle*>();
+    _diamonds  = new std::list<ROAMDiamond*>();
 
     // ================================================================ set up basic ROAM cube
     float r = _planet->getRadius()/sqrt(3);
@@ -81,6 +82,12 @@ PlanetRenderer::PlanetRenderer(Planet*p):
     _triangles->push_front(t673);
     _triangles->push_front(t326);    
 
+    std::list<ROAMTriangle*>::iterator i;
+    for (i = _triangles->begin(); i != _triangles->end(); i++) {
+    	ROAMTriangle*t = *i;
+	t->updateError(_planet);
+    }
+    
     /* I'm keeping the code for setting up the grid in case I need it, but I probably won't,
        and you probably shouldn't uncomment this and expect other things to still work. If
        you do uncomment it, comment the above code that creates the initial ROAM cube.
@@ -260,7 +267,7 @@ void PlanetRenderer::updateROAM() {
     for (i = _triangles->begin(); i != end; i++) {
     	ROAMTriangle*t = *i;	
 
-	if (t->getSplitPriority(_planet, here) > splitPriority) {
+	if (t->getSplitPriority(here) > splitPriority) {
     	    numSplits += t->split(this);
     	}
     }

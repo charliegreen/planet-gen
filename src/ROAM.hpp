@@ -8,8 +8,10 @@
 class ROAMDiamond;
 class PlanetRenderer;
 
-class ROAMTriangle {
+class ROAMTriangle {    
 public:
+    float _error;
+
     GLfloat _verts[9];
     ROAMTriangle*_edges[3];
     ROAMTriangle*_parent;
@@ -18,12 +20,12 @@ public:
     int _id;
     static int _numTriangles;
     
-    ROAMTriangle(ROAMTriangle*parent, ROAMDiamond*diamond); // for split
+    ROAMTriangle(ROAMTriangle*parent); // for split
     ROAMTriangle(glm::vec3 a, glm::vec3 b, glm::vec3 c); // for the main 12
     
-    float getSplitPriority(Planet*p, glm::vec3 pos);
-    //void getVertArray(GLfloat*array);
+    float getSplitPriority(glm::vec3 pos);
     void draw();
+    void updateError(Planet*p);	// updates the cached error
 
     // split returns the number of splits performed
     int split(PlanetRenderer*pr);
@@ -35,8 +37,11 @@ class ROAMDiamond {
 public:
     ROAMTriangle*_parents[2];
     ROAMTriangle*_children[2];
+    float _oldError;
 
+    ROAMDiamond(ROAMTriangle*p1,ROAMTriangle*p2,ROAMTriangle*c1,ROAMTriangle*c2);
     float getMergePriority(glm::vec3 pos);
+    void merge(PlanetRenderer*pr);
 };
 
 #endif
