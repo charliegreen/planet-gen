@@ -21,3 +21,7 @@ unsigned long long Util::timeMillis() {
 glm::vec3 Util::mulvec3(glm::vec3 v, float a) {
     return v*a;
 }
+
+std::ostream&operator<<(std::ostream&strm, const glm::vec3 v) {
+    return strm << "<" << v.x << ", " << v.y << ", " << v.z << ">";
+}

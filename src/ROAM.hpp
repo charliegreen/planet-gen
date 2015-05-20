@@ -30,6 +30,9 @@ public:
     // split returns the number of splits performed
     int split(PlanetRenderer*pr);
 
+    bool isInSquare();
+    bool isInDiamond();
+    
     friend std::ostream&operator<<(std::ostream&strm, const ROAMTriangle*t);
 };
 
@@ -42,6 +45,11 @@ public:
     ROAMDiamond(ROAMTriangle*p1,ROAMTriangle*p2,ROAMTriangle*c1,ROAMTriangle*c2);
     float getMergePriority(glm::vec3 pos, glm::vec3 dir);
     void merge(PlanetRenderer*pr);
+
+    void disconnectAndDelete();
+    ~ROAMDiamond();
+    
+    friend std::ostream&operator<<(std::ostream&strm, const ROAMDiamond*d);
 };
 
 #endif

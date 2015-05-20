@@ -6,7 +6,9 @@
 #include "PlanetRenderer.hpp"
 
 //#define TRIANGLE_DRAW_IDS
+
 //#define PRINT_SPLIT_DEBUG_INFO
+//#define PRINT_MERGE_DEBUG_INFO
 
 int ROAMTriangle::_numTriangles = 0;
 
@@ -120,7 +122,7 @@ int ROAMTriangle::split(PlanetRenderer*pr) {
 #endif
     
     // We're not in a square, so the other triangle needs to split first
-    if (_edges[2]->_edges[2] != this) {	// && _edges[2]->_edges[2]->_edges[2] != this) {
+    if (!isInSquare()) {
 #ifdef PRINT_SPLIT_DEBUG_INFO
 	std::cout << "  edge2: " << _edges[2] << " edge2->edge2: " << _edges[2]->_edges[2] << "\n";
 #endif
@@ -140,6 +142,17 @@ int ROAMTriangle::split(PlanetRenderer*pr) {
 	Util::aToVec3(_edges[2]->_verts+3)
     };
 
+    // check if this will destroy diamonds, and remove destroyed diamonds from list
+    if (isInDiamond() && _diamond != NULL) {
+	pr->_diamonds->remove(_diamond);
+	_diamond->disconnectAndDelete();
+    }
+
+    if (_edges[2]->isInDiamond() && _edges[2]->_diamond != NULL) {
+	pr->_diamonds->remove(_edges[2]->_diamond);
+	_edges[2]->_diamond->disconnectAndDelete();
+    }
+    
 #if 1 				// TODO MAKE THIS #IF 1 WHEN STOP USING GRID
     // find new vertex; its vector is through the midpoint of our hypotenuse
     glm::vec3 newVert = glm::normalize(verts[0]+verts[2]);
@@ -155,14 +168,6 @@ int ROAMTriangle::split(PlanetRenderer*pr) {
     ROAMDiamond*diamond = new ROAMDiamond(this, _edges[2],
 					  new ROAMTriangle(this),
 					  new ROAMTriangle(_edges[2]));
-    // diamond->_parents[0] = this;
-    // diamond->_parents[1] = _edges[2];
-    // diamond->_children[0] = new ROAMTriangle(this, diamond);
-    // diamond->_children[1] = new ROAMTriangle(_edges[2], diamond);
-    // _diamond = diamond;
-    // _edges[2]->_diamond = diamond;
-    // diamond->_children[0]->_diamond = diamond;
-    // diamond->_children[1]->_diamond = diamond;
 
     // store triangles and old edges
     ROAMTriangle*curr = this;
@@ -229,7 +234,7 @@ int ROAMTriangle::split(PlanetRenderer*pr) {
     new0->updateError(pr->_planet);
     new1->updateError(pr->_planet);
     
-    // add new triangles and diamond to list
+    // add new triangles and diamond to lists
     pr->_triangles->push_front(new0);
     pr->_triangles->push_front(new1);
     pr->_diamonds->push_front(diamond);
@@ -250,6 +255,15 @@ int ROAMTriangle::split(PlanetRenderer*pr) {
 
     return numSplits;
 }
+
+bool ROAMTriangle::isInSquare() {
+    return _edges[2]->_edges[2] == this;
+}
+
+bool ROAMTriangle::isInDiamond() {
+    return _edges[0]->_edges[0]->_edges[0]->_edges[0] == this;
+}
+
 
 std::ostream&operator<<(std::ostream&strm, const ROAMTriangle*t) {
     return strm << "Triangle#" << t->_id << "[" << "("
@@ -279,5 +293,112 @@ float ROAMDiamond::getMergePriority(glm::vec3 pos, glm::vec3 dir) {
 }
 
 void ROAMDiamond::merge(PlanetRenderer*pr) {
-    // TODO
+#ifdef PRINT_MERGE_DEBUG_INFO
+    std::cout << "Merging: " << this << "\n";
+#endif
+    
+    glm::vec3 verts[] = {
+	Util::aToVec3(_parents[0]->_verts+6),
+	Util::aToVec3(_parents[0]->_verts),
+	Util::aToVec3(_parents[1]->_verts+6),
+	Util::aToVec3(_parents[1]->_verts)
+    };
+
+    // std::cout << "  verts: ";
+    // for (int i = 0; i < 4; i++)
+    // 	std::cout << verts[i] << ", ";
+    // std::cout << "\n";
+    
+    ROAMTriangle*edges[] = {
+	_parents[0]->_edges[2],
+	_children[0]->_edges[2],
+	_parents[1]->_edges[2],
+	_children[1]->_edges[2]
+    };
+
+#ifdef PRINT_MERGE_DEBUG_INFO
+    std::cout << "  edges: ";
+    for (int i = 0; i < 4; i++)
+	std::cout << edges[i] << ", ";
+    std::cout << "\n";
+#endif
+
+    // reposition triangle vertices
+    Util::vec3ToA(verts[0], _parents[0]->_verts);
+    Util::vec3ToA(verts[1], _parents[0]->_verts+3);
+    Util::vec3ToA(verts[2], _parents[0]->_verts+6);
+    
+    Util::vec3ToA(verts[2], _parents[1]->_verts);
+    Util::vec3ToA(verts[3], _parents[1]->_verts+3);
+    Util::vec3ToA(verts[0], _parents[1]->_verts+6);
+
+    // modify surrounding triangles' edges
+    for (int i = 0; i < 3; i++) {
+	if (_children[0]->_edges[2]->_edges[i] == _children[0])
+	    _children[0]->_edges[2]->_edges[i] = _parents[0];
+	if (_children[1]->_edges[2]->_edges[i] == _children[1])
+	    _children[1]->_edges[2]->_edges[i] = _parents[1];
+    }
+    
+    // reposition triangle edges
+    _parents[0]->_edges[0] = edges[0];
+    _parents[0]->_edges[1] = edges[1];
+    _parents[0]->_edges[2] = _parents[1];
+    _parents[1]->_edges[0] = edges[2];
+    _parents[1]->_edges[1] = edges[3];
+    _parents[1]->_edges[2] = _parents[0];
+
+    // update triangle errors
+    _parents[0]->_error = _oldError;
+    _parents[1]->_error = _oldError;
+
+    // mark parents as no longer being part of a diamond
+    _parents[0]->_diamond = NULL;
+    _parents[1]->_diamond = NULL;
+
+#ifdef PRINT_MERGE_DEBUG_INFO
+    std::cout << "Merged. " << _parents[0] << ", " << _parents[1] << "\n";
+#endif
+
+    // create any new diamonds that must be created
+    if (_parents[0]->isInDiamond()) {
+	pr->_diamonds->push_front(new ROAMDiamond(_parents[0], _parents[0]->_edges[0]->_edges[0],
+						  _parents[0]->_edges[0], _parents[0]->_edges[1]));
+    }
+    if (_parents[1]->isInDiamond()) {
+	pr->_diamonds->push_front(new ROAMDiamond(_parents[1], _parents[1]->_edges[0]->_edges[0],
+						  _parents[1]->_edges[0], _parents[1]->_edges[1]));
+    }
+    
+    // remove children and diamond from lists
+    pr->_triangles->remove(_children[0]);
+    pr->_triangles->remove(_children[1]);
+    pr->_diamonds->remove(this);
+    
+    // deallocate
+    delete this;
+}
+
+ROAMDiamond::~ROAMDiamond() {
+    if (_children[0])
+	delete _children[0];
+    if (_children[1])
+	delete _children[1];
+}
+
+void ROAMDiamond::disconnectAndDelete() {
+    _parents[0]->_diamond = NULL;
+    _parents[1]->_diamond = NULL;
+    _children[0]->_diamond = NULL;
+    _children[1]->_diamond = NULL;
+    _parents[0] = NULL;
+    _parents[1] = NULL;
+    _children[0] = NULL;
+    _children[1] = NULL;
+    delete this;
+}
+
+std::ostream&operator<<(std::ostream&strm, const ROAMDiamond*d) {
+    return strm << "Diamond[" << d->_parents[0]->_id << ", " << d->_children[0]->_id << ", "
+		<< d->_parents[1]->_id << ", " << d->_children[1]->_id << "]";
 }

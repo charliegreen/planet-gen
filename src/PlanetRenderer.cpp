@@ -204,6 +204,10 @@ void PlanetRenderer::display() {
     glutBitmapString(GLUT_BITMAP_HELVETICA_18, (const unsigned char*)text);
 
     glWindowPos2i(10, 760);
+    snprintf(text,sizeof(text),"%lu diamonds", _diamonds->size());
+    glutBitmapString(GLUT_BITMAP_HELVETICA_18, (const unsigned char*)text);
+
+    glWindowPos2i(10, 740);
     snprintf(text,sizeof(text),"%d fps",lastFps);
     glutBitmapString(GLUT_BITMAP_HELVETICA_18, (const unsigned char*)text);
 
@@ -250,10 +254,15 @@ void PlanetRenderer::keyboard(unsigned char key, int x, int y){
 
 void PlanetRenderer::updateROAM() {
 #ifdef UPDATEROAM_PRINTINFO
-    printf("Updating ROAM...");
+    std::cout << "Updating ROAM...";
+    std::cout.flush();
     unsigned long long start = Util::timeMillis();
+
+    int nT = _triangles->size();
+    int nD = _diamonds->size();
 #endif
     int numSplits = 0;
+    int numMerges = 0;
     
     // current camera location
     glm::vec3 pos = getPosition();
@@ -263,9 +272,25 @@ void PlanetRenderer::updateROAM() {
     //std::list<ROAMTriangle*> triangles = std::list<ROAMTriangle*>(*_triangles);
     
     static const float splitPriority = .0001;//1000;
+
+    // do merging first so we don't go through diamonds we just made
+    //std::cout << "Testing " << _diamonds->size() << " diamonds.\n";
+    std::list<ROAMDiamond*>::iterator j;
+    std::list<ROAMDiamond*>::iterator jend = _diamonds->end();
+    for(j = _diamonds->begin(); j != jend;) {
+	ROAMDiamond*d = *j;
+	j++; // increment here so modifications to d don't invalidate our iterator
+
+	//std::cout << "Testing diamond " << d << "\n";
+	if (d->getMergePriority(pos,dir) < splitPriority) {
+	    d->merge(this);
+	    numMerges++;
+	}
+    }
+
     std::list<ROAMTriangle*>::iterator i;
-    std::list<ROAMTriangle*>::iterator end = _triangles->end();
-    for (i = _triangles->begin(); i != end; i++) {
+    std::list<ROAMTriangle*>::iterator iend = _triangles->end();
+    for (i = _triangles->begin(); i != iend; i++) {
     	ROAMTriangle*t = *i;	
 
 	if (t->getSplitPriority(pos,dir) > splitPriority) {
@@ -274,14 +299,22 @@ void PlanetRenderer::updateROAM() {
     }
 
 #ifdef UPDATEROAM_PRINTINFO
-    printf("Done. (%d splits, %lu total triangles) [%llums]\n",
-	   numSplits, _triangles->size(), Util::timeMillis()-start);
+    std::cout << "Done. [" << (Util::timeMillis()-start) << "ms]\n";
+    std::cout << "    splits         : " << numSplits << "\n";
+    std::cout << "    merges         : " << numMerges << "\n";
+    std::cout << "    total triangles: " << _triangles->size() << "\n";
+    std::cout << "    new triangles  : " << (_triangles->size()-nT) << "\n";
+    std::cout << "    new diamonds   : " << (_diamonds->size() -nD) << "\n";
+    // printf("Done. (%d splits, %lu total triangles, %d new triangles, %d new diamonds) [%llums]\n",
+    // 	   numSplits, _triangles->size(),
+    // 	   (int)(_triangles->size()-nT), (int)(_diamonds->size()-nD),
+    // 	   Util::timeMillis()-start);
 #endif
 }
 
 void PlanetRenderer::idle() {
 #if PLANETRENDERER_ROTATE
-    viewAngle += 0.02;
+    viewAngle += 0.2;
 #endif
 
     //updateROAM();

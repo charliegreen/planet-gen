@@ -9,7 +9,7 @@
 #include "ROAM.hpp"
 
 // set to 0 to keep from slowly rotating planets
-#define PLANETRENDERER_ROTATE 1
+//#define PLANETRENDERER_ROTATE 1
 
 // set to 1 to enable wireframe drawing
 #define PLANETRENDERER_WIREFRAME 0

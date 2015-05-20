@@ -19,4 +19,6 @@ public:
     static unsigned long long timeMillis();
 };
 
+std::ostream&operator<<(std::ostream&strm, const glm::vec3 v);
+
 #endif
